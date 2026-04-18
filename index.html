@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, user-scalable=no" >
+    <meta name="description" content="Budget Buddy prototype with a tamagotchi-like finance pet in three.js WebGPU.">
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="stylesheet" href="css/style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "./node_modules/three/build/three.module.js",
+                "three/webgpu": "./node_modules/three/build/three.webgpu.js",
+                "three/tsl": "./node_modules/three/build/three.tsl.js",
+                "three/addons/": "./node_modules/three/examples/jsm/"
+            }
+        }
+    </script>
+    <title>Budget Buddy Home</title>
+    <!--<link rel="shortcut icon" type="image/png" href="/media/img/dNOISE_LOGO 300x300.png"/>!-->
+</head>
+<body>
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <filter id="pencil" x="-4%" y="-4%" width="108%" height="108%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.055" numOctaves="4" seed="8" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+<main class="home-shell">
+    <section class="home-hero">
+        <!-- Scattered background buddies -->
+        <div class="bg-buddy bg-buddy-1" aria-hidden="true"><img src="assets/buddies.png" alt=""></div>
+        <div class="bg-buddy bg-buddy-2" aria-hidden="true"><img src="assets/buddies.png" alt=""></div>
+        <div class="bg-buddy bg-buddy-3" aria-hidden="true"><img src="assets/buddies.png" alt=""></div>
+        <div class="bg-buddy bg-buddy-4" aria-hidden="true"><img src="assets/buddies.png" alt=""></div>
+        <div class="bg-buddy bg-buddy-5" aria-hidden="true"><img src="assets/buddies.png" alt=""></div>
+        <div class="bg-buddy bg-buddy-6" aria-hidden="true"><img src="assets/buddies.png" alt=""></div>
+
+        <div class="home-stack">
+            <h1>Budget Buddy</h1>
+            <p class="hero-copy">Your personal finance companion. Learn to budget, track spending, and grow your savings.</p>
+
+            <section class="scene-panel" aria-label="Budget Buddy 3D scene">
+                <div class="renderer-host"></div>
+
+                <div class="scene-overlay-grid">
+                    <aside class="buddy-chat" aria-label="Chat with Budget Buddy" aria-hidden="true" inert>
+                        <div class="chat-log" role="log" aria-live="polite"></div>
+                        <div class="scene-chat-input-lane" aria-hidden="true">
+                            <form class="chat-form">
+                                <label class="sr-only" for="buddy-chat-input">Chat with Budget Buddy</label>
+                                <input id="buddy-chat-input" class="chat-input" type="text" maxlength="420" placeholder="Ask Buddy about your budget..." />
+                                <button class="chat-send" type="submit">Send</button>
+                            </form>
+                        </div>
+                    </aside>
+
+                    <div class="scene-side-box scene-side-box-top" aria-hidden="true"></div>
+                    <div class="scene-side-box scene-side-box-bottom" aria-hidden="true"></div>
+                </div>
+            </section>
+
+            <button class="primary-cta" type="button">Get Started</button>
+        </div>
+    </section>
+</main>
+
+<!-- Games overlay -->
+<div class="games-overlay" id="games-overlay" aria-hidden="true" inert>
+    <div class="games-modal">
+        <button class="games-close" id="games-close" aria-label="Close games menu">&times;</button>
+        <h2 class="games-title">Mini Games</h2>
+        <div class="games-grid">
+            <button class="game-card" id="open-market-dash">
+                <div class="game-card-emoji">📈</div>
+                <div class="game-card-title">Market Dash</div>
+                <div class="game-card-desc">8-bit auto-runner. Collect assets, dodge risks, grow your portfolio.</div>
+            </button>
+            <button class="game-card" id="open-budget-invaders">
+                <div class="game-card-emoji">🚀</div>
+                <div class="game-card-title">Budget Invaders</div>
+                <div class="game-card-desc">Space shooter. Blast your WANTS, let your NEEDS pass. Defend your finances!</div>
+            </button>
+            <button class="game-card" id="open-great-matchvestment">
+                <div class="game-card-emoji">🌱</div>
+                <div class="game-card-title">The Great Matchvestment</div>
+                <div class="game-card-desc">Finance quiz. Match every term to its definition. Keep your garden alive!</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Market Dash game overlay -->
+<div class="game-play-overlay" id="market-dash-overlay" aria-hidden="true" inert>
+    <button class="md-close-btn" id="market-dash-close" aria-label="Back to games">&times;</button>
+    <div class="md-hud">
+        <span class="md-hud-item" id="md-balance">$1,000</span>
+        <span class="md-hud-sep">|</span>
+        <span class="md-hud-item" id="md-score">Score: 0</span>
+        <span class="md-hud-sep">|</span>
+        <span class="md-hud-item" id="md-level">Lvl 1 — Bull Run</span>
+    </div>
+    <div class="md-canvas-wrap">
+        <canvas id="market-dash-canvas"></canvas>
+
+        <div class="md-overlay-screen" id="md-start-screen">
+            <h2 class="md-screen-title">MARKET DASH</h2>
+            <p class="md-screen-sub">COLLECT ASSETS. AVOID RISKS.<br>REACH LEVEL 5.</p>
+            <button class="md-screen-btn" id="md-start-btn">▶ ENTER THE TRADE</button>
+            <p class="md-screen-hint">SPACE / TAP TO JUMP</p>
+        </div>
+
+        <div class="md-overlay-screen hidden" id="md-gameover-screen">
+            <h2 class="md-screen-title md-red">GAME OVER</h2>
+            <p class="md-screen-sub">PORTFOLIO CRASHED</p>
+            <p class="md-final-score" id="md-final-score"></p>
+            <button class="md-screen-btn" id="md-restart-btn">↺ CONTINUE?</button>
+        </div>
+
+        <div class="md-term-popup hidden" id="md-term-popup">
+            <div class="md-term-type" id="md-term-type"></div>
+            <h3 class="md-term-name" id="md-term-name"></h3>
+            <p class="md-term-def" id="md-term-def"></p>
+            <button class="md-term-resume-btn" id="md-term-resume">CONTINUE RUN →</button>
+            <p class="md-screen-hint">SPACE TO RESUME</p>
+        </div>
+    </div>
+</div>
+
+<!-- Great Matchvestment game overlay -->
+<div class="game-play-overlay gm-overlay" id="great-matchvestment-overlay" aria-hidden="true" inert>
+    <!-- Garden background -->
+    <div class="gm-garden-bg" id="gm-garden-bg" aria-hidden="true">
+        <div class="gm-sky-dots"></div>
+        <div class="gm-clouds-layer" id="gm-clouds-layer"></div>
+        <div class="gm-ground-area">
+            <div class="gm-grass-strip">
+                <div class="gm-grass-blades" id="gm-grass-blades"></div>
+            </div>
+            <div class="gm-soil">
+                <div class="gm-rocks" id="gm-rocks"></div>
+            </div>
+            <div class="gm-plants-row" id="gm-plants-row"></div>
+        </div>
+    </div>
+    <button class="md-close-btn gm-close-btn" id="gm-close" aria-label="Back to games">&times;</button>
+
+    <div class="gm-hud">
+        <div class="gm-hud-section">
+            <span class="gm-hud-label">HARVESTED</span>
+            <span class="gm-hud-value" id="gm-score">0 / 10</span>
+        </div>
+        <div class="gm-hud-section gm-health-section">
+            <span class="gm-hud-label">GARDEN HP</span>
+            <div class="gm-health-track">
+                <div class="gm-health-fill" id="gm-health-fill"></div>
+            </div>
+            <span class="gm-hud-value" id="gm-health-pct">100%</span>
+        </div>
+        <div class="gm-hud-section">
+            <span class="gm-hud-label">QUESTION</span>
+            <span class="gm-hud-value" id="gm-progress">1 / 10</span>
+        </div>
+    </div>
+
+    <div class="gm-content">
+
+        <!-- Start screen -->
+        <div class="gm-screen" id="gm-start-screen">
+            <div class="gm-screen-inner">
+                <div class="gm-pixel-badge">Level 1: Finance Newbie</div>
+                <h2 class="gm-title">THE GREAT<br>MATCHVESTMENT</h2>
+                <p class="gm-desc">Match the definitions correctly to keep your garden lush.<br>Wrong answers will wither your crops!</p>
+                <div class="gm-features">
+                    <div class="gm-feature-box"><h3>Master Terms</h3><p>Learn essential market vocabulary.</p></div>
+                    <div class="gm-feature-box"><h3>4 Choices</h3><p>Pick the right definition each round.</p></div>
+                    <div class="gm-feature-box"><h3>Garden Score</h3><p>Watch your score bloom with each hit.</p></div>
+                </div>
+                <button class="gm-btn-primary" id="gm-start-btn">INSERT COIN</button>
+            </div>
+        </div>
+
+        <!-- Play screen -->
+        <div class="gm-screen hidden" id="gm-play-screen">
+            <div class="gm-play-inner">
+                <div class="gm-term-label">Mission: Define the term</div>
+                <div class="gm-term-box" id="gm-term"></div>
+                <div class="gm-options" id="gm-options"></div>
+            </div>
+            <div class="gm-footer">
+                <p class="gm-footer-hint" id="gm-footer-hint">* GARDEN HP DEPENDS ON ACCURACY *</p>
+                <button class="gm-btn-primary hidden" id="gm-next-btn">CONTINUE →</button>
+            </div>
+        </div>
+
+        <!-- Finished screen -->
+        <div class="gm-screen hidden" id="gm-finished-screen">
+            <div class="gm-screen-inner">
+                <div class="gm-finish-icon">🌳</div>
+                <h2 class="gm-title">GAME OVER</h2>
+                <p class="gm-finish-score" id="gm-finish-score"></p>
+                <div class="gm-finish-bar-wrap"><div class="gm-finish-bar" id="gm-finish-bar"></div></div>
+                <div class="gm-go-buttons">
+                    <button class="gm-btn-primary" id="gm-replay-btn">PLAY AGAIN</button>
+                    <button class="gm-btn-outline" id="gm-home-btn">HOME</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Budget Invaders game overlay -->
+<div class="game-play-overlay bi-overlay" id="budget-invaders-overlay" aria-hidden="true" inert>
+    <button class="md-close-btn" id="bi-close" aria-label="Back to games">&times;</button>
+    <div class="bi-hud">
+        <div class="bi-hud-section">
+            <span class="bi-hud-label">ACCUMULATED WEALTH</span>
+            <span class="bi-hud-value" id="bi-score">0</span>
+        </div>
+        <div class="bi-hud-section">
+            <span class="bi-hud-label">TAX BRACKET</span>
+            <span class="bi-hud-value" id="bi-level">LVL 1</span>
+        </div>
+        <div class="bi-hud-section bi-hud-health-section">
+            <span class="bi-hud-label">FINANCIAL STABILITY</span>
+            <div class="bi-health-track">
+                <div class="bi-health-fill" id="bi-health-fill"></div>
+            </div>
+            <span class="bi-hud-value" id="bi-health-pct">100%</span>
+        </div>
+    </div>
+
+    <div class="bi-canvas-area">
+        <canvas id="bi-canvas" width="800" height="600"></canvas>
+
+        <div class="bi-screen" id="bi-start-screen">
+            <div class="bi-screen-content">
+                <h2 class="bi-title">BUDGET INVADERS</h2>
+                <p class="bi-subtitle">Consumerist Defense Protocol</p>
+                <div class="bi-rules">
+                    <div class="bi-rule bi-rule-need">
+                        <strong>🛡 NEEDS (BLUE) — LET THEM PASS</strong>
+                        <span>Rent, Groceries, Insurance, Utilities…</span>
+                    </div>
+                    <div class="bi-rule bi-rule-want">
+                        <strong>🎯 WANTS (RED) — BLAST ON SIGHT</strong>
+                        <span>Netflix, Lattes, Designer Shoes, Impulse Buys…</span>
+                    </div>
+                </div>
+                <button class="bi-btn-primary" id="bi-start-btn">▶ START SAVING</button>
+                <p class="bi-hint">SPACE TO FIRE  ·  ARROW KEYS TO MOVE</p>
+            </div>
+        </div>
+
+        <div class="bi-screen hidden" id="bi-gameover-screen">
+            <div class="bi-screen-content">
+                <h2 class="bi-title bi-red">BANKRUPT</h2>
+                <p class="bi-subtitle">Final Financial Portfolio</p>
+                <p class="bi-final-score" id="bi-final-score"></p>
+                <div class="bi-go-buttons">
+                    <button class="bi-btn-primary" id="bi-restart-btn">↺ REFILE</button>
+                    <button class="bi-btn-outline" id="bi-exit-btn">EXIT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bi-touch-controls">
+        <button class="bi-touch-btn" id="bi-btn-left">◀</button>
+        <button class="bi-touch-btn bi-fire-btn" id="bi-btn-fire">FIRE</button>
+        <button class="bi-touch-btn" id="bi-btn-right">▶</button>
+    </div>
+</div>
+
+<script type="module" src="js/index.js"></script>
+</body>
+</html>
+

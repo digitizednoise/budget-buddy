@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project configuration
+js/config.js
+
+# OS specific files
+.DS_Store
+Thumbs.db
